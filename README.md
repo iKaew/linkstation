@@ -1,6 +1,6 @@
 [![CI](https://github.com/iKaew/linkstation/actions/workflows/python-app.yml/badge.svg)](https://github.com/iKaew/linkstation/actions/workflows/python-app.yml)
 
-# LinkStation cli
+# LinkStation client
 
 This project create for handling Buffalo LinkStation NAS with original firmware. It's originally created to integrate with Home Assistant to display the current status of NAS such as online status, disk spaces used, and have ability to perform restart from within home-assistant. 
 
