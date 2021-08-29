@@ -14,6 +14,7 @@ async def main() -> None:
     api = LinkStation("<YOUR_LINKSTATION_ADMIN_USERNAME>","<YOUR_LINKSTATION_ADMIN_PASSWORD>","<YOUR_LINKSTATION_NAME/IP>")
 
     disks = await api.get_all_disk()
+    await api.close()
 
 asyncio.run(main())
 ```
