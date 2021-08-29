@@ -1,4 +1,4 @@
-__pycache__/*
+**/__pycache__/*
 *.code-workspace
 src/*.egg-info
 dist/

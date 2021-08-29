@@ -210,43 +210,55 @@ class LinkStation:
 
         return None
 
-    async def get_disk_capacity(self, diskName):
+    async def get_disk_capacity(self, diskName) -> int:
+        """Get disk capacity, data return in GB"""
         if self._diskInfo is None:
             await self.get_disks_info()
 
         for data in self._diskInfo:
             if data[LINKSTATION_API_REPONSE_DATA_DISK_ELEMENT] == diskName:
-                return data[LINKSTATION_API_REPONSE_DATA_DISK_CAPACITY]
+                return self._format_disk_space(data[LINKSTATION_API_REPONSE_DATA_DISK_CAPACITY])
 
         return None
 
-    async def get_disk_amount_used(self, diskName):
+    async def get_disk_amount_used(self, diskName) -> int:
+        """Get disk spaces used, data return in GB"""
         if self._diskInfo is None:
             await self.get_disks_info()
 
         for data in self._diskInfo:
             if data[LINKSTATION_API_REPONSE_DATA_DISK_ELEMENT] == diskName:
-                return data[LINKSTATION_API_REPONSE_DATA_DISK_AMOUNT_USED]
+                return self._format_disk_space(data[LINKSTATION_API_REPONSE_DATA_DISK_AMOUNT_USED])
 
         return None
 
-    async def get_disk_pct_used(self, diskName):
+    def _format_disk_space(self, diskSpaceStr: str) -> int : 
+        number = diskSpaceStr.removesuffix(" KB").replace(',', '')
+        return round(int(number) / 1024 / 1024)
+
+    def _format_disk_pct(self, diskPct: str) -> float:
+        percentUsed = diskPct.removesuffix(" %")
+        return float(percentUsed)
+
+    async def get_disk_pct_used(self, diskName) -> float:
+        """Get disk space used, data return in percentage"""
         if self._diskInfo is None:
             await self.get_disks_info()
 
         for data in self._diskInfo:
             if data[LINKSTATION_API_REPONSE_DATA_DISK_ELEMENT] == diskName:
-                return data[LINKSTATION_API_REPONSE_DATA_DISK_PCT_USED]
+                return self._format_disk_pct(data[LINKSTATION_API_REPONSE_DATA_DISK_PCT_USED])
 
         return None
 
     async def get_disk_unit_name(self, diskName):
+        """ Get HDD manufacturing info."""
         if self._diskInfo is None:
             await self.get_disks_info()
 
         for data in self._diskInfo:
             if data[LINKSTATION_API_REPONSE_DATA_DISK_ELEMENT] == diskName:
-                return data[LINKSTATION_API_REPONSE_DATA_DISK_UNITNAME]
+                return data[LINKSTATION_API_REPONSE_DATA_DISK_UNITNAME].strip()
 
         return None
 
