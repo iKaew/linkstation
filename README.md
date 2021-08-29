@@ -18,3 +18,7 @@ async def main() -> None:
 
 asyncio.run(main())
 ```
+
+
+# Notes
+All api testing based on Buffalo LinkStation Duo LS-WXL
