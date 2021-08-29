@@ -1,3 +1,2 @@
-__pycache__/const.cpython-39.pyc
-__pycache__/linkstation.cpython-39.pyc
-linkstation-vsworkspace.code-workspace
+__pycache__/*
+*.code-workspace
