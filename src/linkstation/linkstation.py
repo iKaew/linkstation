@@ -2,7 +2,7 @@ import json
 import logging
 import aiohttp
 
-from const import (
+from .const import (
     DEFAULT_NAS_LANGUAGE,
     DEFAULT_PROTOCOL,
     LINKSTATION_API_ACTION_PARAM_NAME,
@@ -180,7 +180,7 @@ class LinkStation:
                 if self._is_success(getdisksinfo):
                     self._diskInfo = getdisksinfo[LINKSTATION_API_REPONSE_DATA_ELEMENT]            
 
-    async def get_all_disk(self):
+    async def get_all_disks(self):
         if self._diskInfo is None:
             await self.get_disks_info()
 
@@ -191,8 +191,8 @@ class LinkStation:
 
         return disk_list
 
-    async def get_active_list(self):
-        disk_list = await self.get_all_disk()
+    async def get_active_disks(self):
+        disk_list = await self.get_all_disks()
         active_list = []
         for disk in disk_list:
             if await self.get_disk_status(disk) not in (LINKSTATION_API_REPONSE_DATA_DISK_STATUS_REMOVE, LINKSTATION_API_REPONSE_DATA_DISK_STATUS_DISCONNECT):
