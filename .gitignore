@@ -1,4 +1,5 @@
 __pycache__/*
 *.code-workspace
-dist/*
-linkstation/linkstation_cli.egg-info/*
+src/*.egg-info
+dist/
+build/
