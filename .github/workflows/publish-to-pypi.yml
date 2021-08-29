@@ -5,7 +5,6 @@ name: Publish to PyPi
 
 on:
   push:
-    branches: [ master ]
 
 jobs:
   build-n-publish:
