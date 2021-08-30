@@ -8,6 +8,7 @@ This project create for handling Buffalo LinkStation NAS with original firmware.
 
 ```python
 import asyncio
+from linkstation import LinkStation
 
 async def main() -> None:
     """Run!"""
