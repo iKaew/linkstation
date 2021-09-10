@@ -15,20 +15,20 @@ async def main() -> None:
     api = LinkStation("<LINKSTATION_ADMIN_USERNAME>","<LINKSTATION_ADMIN_PASSWORD>","<LINKSTATION_HOSTNAME/IP>")
 
     # List all disks
-    disks = await api.get_all_disks()
+    disks = await api.get_all_disks_async()
     for disk in disks: 
-        _LOGGER.debug(disk + ': ' + await api.get_disk_status(disk))
+        _LOGGER.debug(disk + ': ' + await api.get_disk_status_async(disk))
 
-    active_disks = await api.get_active_disks()
+    active_disks = await api.get_active_disks_async()
     for disk in active_disks: 
         # Get disk capacity in GB
-        diskCapacity = await api.get_disk_capacity(disk)
+        diskCapacity = await api.get_disk_capacity_async(disk)
         
         # Get current used disk space in GB
-        diskUsed = await api.get_disk_amount_used(disk)
+        diskUsed = await api.get_disk_amount_used_async(disk)
         
         # Get current used disk space in percentage (provided by LinkStation)
-        diskUsedPct = await api.get_disk_pct_used(disk)
+        diskUsedPct = await api.get_disk_pct_used_async(disk)
 
 asyncio.run(main())
 ```
