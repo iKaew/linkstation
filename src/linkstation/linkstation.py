@@ -1,8 +1,10 @@
 import json
 import logging
 import aiohttp
+from expiringdict import ExpiringDict
 
 from .const import (
+    DEFAULT_DATA_CACHE_SECONDS,
     DEFAULT_NAS_LANGUAGE,
     DEFAULT_PROTOCOL,
     LINKSTATION_API_ACTION_PARAM_NAME,
@@ -47,6 +49,7 @@ class LinkStation:
         session=None,
         language=DEFAULT_NAS_LANGUAGE,
         protocol=DEFAULT_PROTOCOL,
+        cache_age=DEFAULT_DATA_CACHE_SECONDS
     ) -> None:
 
         self._username = username
@@ -57,7 +60,18 @@ class LinkStation:
         self._session = session
         self._api = None
         self._settingInfo = None
-        self._diskInfo = None
+        self._cache = ExpiringDict(max_len=10, max_age_seconds=cache_age)
+
+    async def get_data_with_cache(self):
+        data = None
+
+        if self._cache.get("data") is not None:
+            data = self._cache.get("data")
+        else:
+            _LOGGER.debug("Data key{%s} missing from cache", "data")
+            data = await self.get_disks_info()
+
+        return data
 
     async def connect(self):
 
@@ -71,7 +85,7 @@ class LinkStation:
         formdata.add_field(LINKSTATION_API_PARAM_USERNAME, self._username)
         formdata.add_field(LINKSTATION_API_PARAM_PASSWORD, self._password)
 
-        if self._session is None:
+        if self._session is None or self._session.closed:
             self._session = aiohttp.ClientSession()
         async with self._session.post(self._api, data=formdata) as authresp:
             _LOGGER.debug(await authresp.text())
@@ -165,29 +179,37 @@ class LinkStation:
                 _LOGGER.info("LinkStation restarting ... ")
 
     async def get_disks_info(self):
-        if self._session == None:
-            await self.connect()
+        if self._session == None or self._session.closed:
+            await self.connect()        
 
         formdata = aiohttp.FormData()
         formdata.add_field(
             LINKSTATION_API_FUNCTION_PARAM_NAME, LINKSTATION_API_GETALLDISK_FUNC_NAME
         )
+        
         async with self._session.post(
                 self._api, data=formdata, cookies=self._cookies
             ) as getdisksresp:
                 getdisksinfo = json.loads(await getdisksresp.text())
                 _LOGGER.debug(await getdisksresp.text())
+                
                 if self._is_success(getdisksinfo):
-                    self._diskInfo = getdisksinfo[LINKSTATION_API_REPONSE_DATA_ELEMENT]            
+                    #self._diskInfo = getdisksinfo[LINKSTATION_API_REPONSE_DATA_ELEMENT]
+                    self._cache['data'] = getdisksinfo[LINKSTATION_API_REPONSE_DATA_ELEMENT]
+                    return getdisksinfo[LINKSTATION_API_REPONSE_DATA_ELEMENT]
+                else: 
+                    return None
+
+
 
     async def get_all_disks(self):
-        if self._diskInfo is None:
-            await self.get_disks_info()
 
+        diskInfo = await self.get_data_with_cache()
+                    
         disk_list = []
 
-        for data in self._diskInfo:
-            disk_list.append(data[LINKSTATION_API_REPONSE_DATA_DISK_ELEMENT])
+        for dataelement in diskInfo:
+            disk_list.append(dataelement[LINKSTATION_API_REPONSE_DATA_DISK_ELEMENT])
 
         return disk_list
 
@@ -201,10 +223,9 @@ class LinkStation:
         return active_list
 
     async def get_disk_status(self, diskName):
-        if self._diskInfo is None:
-            await self.get_disks_info()
+        diskInfo = await self.get_data_with_cache()
 
-        for data in self._diskInfo:
+        for data in diskInfo:
             if data[LINKSTATION_API_REPONSE_DATA_DISK_ELEMENT] == diskName:
                 return data[LINKSTATION_API_REPONSE_DATA_DISK_STATUS]
 
@@ -212,10 +233,9 @@ class LinkStation:
 
     async def get_disk_capacity(self, diskName) -> int:
         """Get disk capacity, data return in GB"""
-        if self._diskInfo is None:
-            await self.get_disks_info()
+        diskInfo = await self.get_data_with_cache()
 
-        for data in self._diskInfo:
+        for data in diskInfo:
             if data[LINKSTATION_API_REPONSE_DATA_DISK_ELEMENT] == diskName:
                 return self._format_disk_space(data[LINKSTATION_API_REPONSE_DATA_DISK_CAPACITY])
 
@@ -223,10 +243,9 @@ class LinkStation:
 
     async def get_disk_amount_used(self, diskName) -> int:
         """Get disk spaces used, data return in GB"""
-        if self._diskInfo is None:
-            await self.get_disks_info()
+        diskInfo = await self.get_data_with_cache()
 
-        for data in self._diskInfo:
+        for data in diskInfo:
             if data[LINKSTATION_API_REPONSE_DATA_DISK_ELEMENT] == diskName:
                 return self._format_disk_space(data[LINKSTATION_API_REPONSE_DATA_DISK_AMOUNT_USED])
 
@@ -242,10 +261,9 @@ class LinkStation:
 
     async def get_disk_pct_used(self, diskName) -> float:
         """Get disk space used, data return in percentage"""
-        if self._diskInfo is None:
-            await self.get_disks_info()
+        diskInfo = await self.get_data_with_cache()
 
-        for data in self._diskInfo:
+        for data in diskInfo:
             if data[LINKSTATION_API_REPONSE_DATA_DISK_ELEMENT] == diskName:
                 return self._format_disk_pct(data[LINKSTATION_API_REPONSE_DATA_DISK_PCT_USED])
 
@@ -253,10 +271,9 @@ class LinkStation:
 
     async def get_disk_unit_name(self, diskName):
         """ Get HDD manufacturing info."""
-        if self._diskInfo is None:
-            await self.get_disks_info()
+        diskInfo = await self.get_data_with_cache()
 
-        for data in self._diskInfo:
+        for data in diskInfo:
             if data[LINKSTATION_API_REPONSE_DATA_DISK_ELEMENT] == diskName:
                 return data[LINKSTATION_API_REPONSE_DATA_DISK_UNITNAME].strip()
 

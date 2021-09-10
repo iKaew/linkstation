@@ -4,6 +4,7 @@ from typing import Final
 
 DEFAULT_NAS_LANGUAGE: Final = "en"
 DEFAULT_PROTOCOL: Final = "http"
+DEFAULT_DATA_CACHE_SECONDS: Final = 10 #seconds
 
 LINKSTATION_API_ENDPOINT = "dynamic.pl"
 LINKSTATION_API_FUNCTION_PARAM_NAME = "bufaction"
