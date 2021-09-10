@@ -13,15 +13,15 @@ async def main() -> None:
     api = LinkStation("<YOUR_LINKSTATION_ADMIN_USERNAME>","<YOUR_LINKSTATION_ADMIN_PASSWORD>","<YOUR_LINKSTATION_NAME/IP>")
 
      # List all disks
-    disks = await api.get_all_disks()
+    disks = await api.get_all_disks_async()
     for disk in disks: 
         _LOGGER.debug(disk + ': ' + await api.get_disk_status(disk))
 
     active_disks = await api.get_active_disks()
     for disk in active_disks: 
-        diskCapacity = await api.get_disk_capacity(disk)
-        diskUsed = await api.get_disk_amount_used(disk)
-        diskUsedPct = await api.get_disk_pct_used(disk)
+        diskCapacity = await api.get_disk_capacity_async(disk)
+        diskUsed = await api.get_disk_amount_used_async(disk)
+        diskUsedPct = await api.get_disk_pct_used_async(disk)
         _LOGGER.debug("disk %s: %s / %s GB", disk, diskUsed, diskCapacity)
         _LOGGER.debug("pct used %s%%", round(diskUsedPct, 2))
 
