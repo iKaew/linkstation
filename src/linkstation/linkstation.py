@@ -187,6 +187,12 @@ class LinkStation:
             if self._is_success(rebootInfo):
                 _LOGGER.info("LinkStation restarting ... ")
 
+    async def get_disks_info_with_cache_async(self):
+        if self._cache[LINKSTATION_API_REPONSE_DATA_ELEMENT]:
+            return self._cache[LINKSTATION_API_REPONSE_DATA_ELEMENT]
+
+        return await self.get_disks_info_async()
+
     async def get_disks_info_async(self):
         if self._session == None or self._session.closed:
             await self.connect_async()

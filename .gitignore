@@ -3,3 +3,5 @@
 src/*.egg-info
 dist/
 build/
+local_testing/test.py
+.vscode/launch.json
