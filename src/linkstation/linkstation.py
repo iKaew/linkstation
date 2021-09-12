@@ -129,16 +129,29 @@ class LinkStation:
             LINKSTATION_API_FUNCTION_PARAM_NAME: LINKSTATION_API_GETSETTINGS_FUNC_NAME
         }
 
-        async with self._session.get(
-            self._api, params=params, cookies=self._cookies
-        ) as settingresp:
-            settingInfo = json.loads(await settingresp.text())
+        try:
+            async with self._session.get(
+                self._api, params=params, cookies=self._cookies
+            ) as settingresp:
+                settingInfo = json.loads(await settingresp.text())
 
-            if self._is_success(settingInfo):
-                _LOGGER.debug(await settingresp.text())
-                self._cache['settingInfo'] = settingInfo
-                return settingInfo
-            return None
+                if self._is_success(settingInfo):
+                    _LOGGER.debug(await settingresp.text())
+                    self._cache['settingInfo'] = settingInfo
+                    return settingInfo
+                return None
+
+            # here, the async with context for the response ends, and the response is
+            # released.
+        except aiohttp.ClientConnectionError:
+            # something went wrong with the exception, decide on what to do next
+            _LOGGER.error("Oops, the connection was dropped before we finished", exc_info=True)
+        except aiohttp.ClientError as client_error:
+            # something went wrong in general. Not a connection error, that was handled
+            # above.
+            _LOGGER.error("Oops, something else went wrong with the request %s", client_error.with_traceback, exc_info=True)
+
+        
 
     async def get_spaces_info_desc_async(self):
         return await self._get_settingsinfo_field_async("r_storage")
@@ -188,8 +201,8 @@ class LinkStation:
                 _LOGGER.info("LinkStation restarting ... ")
 
     async def get_disks_info_with_cache_async(self):
-        if self._cache[LINKSTATION_API_REPONSE_DATA_ELEMENT]:
-            return self._cache[LINKSTATION_API_REPONSE_DATA_ELEMENT]
+        if self._cache.get(LINKSTATION_API_REPONSE_DATA_ELEMENT):
+            return self._cache.get(LINKSTATION_API_REPONSE_DATA_ELEMENT)
 
         return await self.get_disks_info_async()
 
@@ -202,17 +215,31 @@ class LinkStation:
             LINKSTATION_API_FUNCTION_PARAM_NAME, LINKSTATION_API_GETALLDISK_FUNC_NAME
         )
 
-        async with self._session.post(
+        try:
+            async with self._session.post(
             self._api, data=formdata, cookies=self._cookies
-        ) as getdisksresp:
-            getdisksinfo = json.loads(await getdisksresp.text())
-            _LOGGER.debug(await getdisksresp.text())
+            ) as getdisksresp:
+                response_str = await getdisksresp.text()
+                getdisksinfo = json.loads(response_str)
+                _LOGGER.debug(response_str)
 
-            if self._is_success(getdisksinfo):
-                self._cache[LINKSTATION_API_REPONSE_DATA_ELEMENT] = getdisksinfo[LINKSTATION_API_REPONSE_DATA_ELEMENT]
-                return getdisksinfo[LINKSTATION_API_REPONSE_DATA_ELEMENT]
-            else:
-                return None
+                if self._is_success(getdisksinfo):
+                    self._cache[LINKSTATION_API_REPONSE_DATA_ELEMENT] = getdisksinfo[LINKSTATION_API_REPONSE_DATA_ELEMENT]
+                    return getdisksinfo[LINKSTATION_API_REPONSE_DATA_ELEMENT]
+                else:
+                    _LOGGER.error("Server return unsuccess response %s %s", getdisksresp.reason, response_str)
+                    return None
+            # here, the async with context for the response ends, and the response is
+            # released.
+        except aiohttp.ClientConnectionError:
+            # something went wrong with the exception, decide on what to do next
+            _LOGGER.error("Oops, the connection was dropped before we finished", exc_info=True)
+        except aiohttp.ClientError as client_error:
+            # something went wrong in general. Not a connection error, that was handled
+            # above.
+            _LOGGER.error("Oops, something else went wrong with the request %s", client_error.with_traceback, exc_info=True)
+
+        
 
     async def get_all_disks_async(self):
 
