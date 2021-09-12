@@ -105,7 +105,7 @@ class LinkStation:
                 self._sid = self._get_user_sid(authData)
                 self._pagemode = self._get_pagemode(authData)
                 self._cookies = self._create_authentication_cookie()
-                self._authentication_expire_at = datetime.now() + timedelta(minute=10)
+                self._authentication_expire_at = datetime.now() + timedelta(minutes=10)
             else:
                 _LOGGER.error("Authentication failed")
 
