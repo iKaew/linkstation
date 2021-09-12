@@ -2,6 +2,7 @@ import json
 import logging
 import aiohttp
 from expiringdict import ExpiringDict
+from datetime import datetime, timedelta
 
 from .const import (
     DEFAULT_DATA_CACHE_SECONDS,
@@ -60,15 +61,25 @@ class LinkStation:
         self._session = session
         self._api = None
         self._cache = ExpiringDict(max_len=10, max_age_seconds=cache_age)
+        self._authentication_expire_at = None
+
+    def _authentication_required(self) -> bool:
+        if (self._authentication_expire_at is None):
+            return True
+
+        if (self._authentication_expire_at < datetime.now):
+            return True
+
+        return False
+
+
 
     async def get_data_with_cache_async(self):
-        data = None
+        data = self._cache.get(LINKSTATION_API_REPONSE_DATA_ELEMENT)
 
-        if self._cache.get(LINKSTATION_API_REPONSE_DATA_ELEMENT) is not None:
-            data = self._cache.get(LINKSTATION_API_REPONSE_DATA_ELEMENT)
-        else:
+        if data is None:
             _LOGGER.debug("Data key{%s} missing from cache", LINKSTATION_API_REPONSE_DATA_ELEMENT)
-            data = await self.get_disks_info_async()
+            data = await self.get_disks_info_async()            
 
         return data
 
@@ -94,6 +105,7 @@ class LinkStation:
                 self._sid = self._get_user_sid(authData)
                 self._pagemode = self._get_pagemode(authData)
                 self._cookies = self._create_authentication_cookie()
+                self._authentication_expire_at = datetime.now() + timedelta(minute=10)
             else:
                 _LOGGER.error("Authentication failed")
 
@@ -122,7 +134,7 @@ class LinkStation:
 
     async def _get_settings_info(self):
 
-        if self._session == None:
+        if self._session == None or self._session.closed or self._authentication_required:
             await self.connect_async()
 
         params = {
@@ -181,7 +193,7 @@ class LinkStation:
                 return data["value"]
 
     async def restart_async(self):
-        if self._session == None:
+        if self._session == None or self._session.closed or self._authentication_required:
             await self.connect_async()
 
         formdata = aiohttp.FormData()
@@ -207,7 +219,7 @@ class LinkStation:
         return await self.get_disks_info_async()
 
     async def get_disks_info_async(self):
-        if self._session == None or self._session.closed:
+        if self._session == None or self._session.closed or self._authentication_required:
             await self.connect_async()
 
         formdata = aiohttp.FormData()
@@ -238,6 +250,8 @@ class LinkStation:
             # something went wrong in general. Not a connection error, that was handled
             # above.
             _LOGGER.error("Oops, something else went wrong with the request %s", client_error.with_traceback, exc_info=True)
+        
+        return None
 
         
 
@@ -266,6 +280,9 @@ class LinkStation:
 
     async def get_disk_status_async(self, diskName):
         diskInfo = await self.get_data_with_cache_async()
+
+        if diskInfo is None :
+            return None
 
         for data in diskInfo:
             if data[LINKSTATION_API_REPONSE_DATA_DISK_ELEMENT] == diskName:
@@ -316,6 +333,9 @@ class LinkStation:
         """Get disk capacity, data return in GB"""
         diskInfo = self._cache.get(LINKSTATION_API_REPONSE_DATA_ELEMENT)
 
+        if diskInfo is None:
+            return None
+
         for data in diskInfo:
             if data[LINKSTATION_API_REPONSE_DATA_DISK_ELEMENT] == diskName:
                 return self._format_disk_space(
@@ -339,6 +359,9 @@ class LinkStation:
     def get_disk_amount_used(self, diskName) -> int:
         """Get disk spaces used, data return in GB"""
         diskInfo = self._cache.get(LINKSTATION_API_REPONSE_DATA_ELEMENT)
+
+        if diskInfo is None:
+            return None
 
         for data in diskInfo:
             if data[LINKSTATION_API_REPONSE_DATA_DISK_ELEMENT] == diskName:
@@ -372,6 +395,8 @@ class LinkStation:
         """Get disk space used, data return in percentage"""
         diskInfo = self._cache.get(LINKSTATION_API_REPONSE_DATA_ELEMENT)
 
+        if diskInfo is None:
+            return None
         for data in diskInfo:
             if data[LINKSTATION_API_REPONSE_DATA_DISK_ELEMENT] == diskName:
                 return self._format_disk_pct(
@@ -398,6 +423,8 @@ class LinkStation:
         """Get disk space used, data return in percentage"""
         diskInfo = diskInfo = self._cache.get(LINKSTATION_API_REPONSE_DATA_ELEMENT)
 
+        if diskInfo is None:
+            return None
         for data in diskInfo:
             if data[LINKSTATION_API_REPONSE_DATA_DISK_ELEMENT] == diskName:
                 return self._format_disk_space(
